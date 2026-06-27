@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-playfair: 'Playfair Display', Didot, Georgia, serif;
+  --font-montserrat: 'Montserrat', Inter, sans-serif;
+  --font-alex-brush: 'Alex Brush', cursive;
+  --shadow-gold: 0 0 15px rgba(212, 175, 55, 0.25);
+  --shadow-gold-heavy: 0 0 30px rgba(212, 175, 55, 0.45);
+}
+
+body {
+  background-color: #0a0a0a;
+  color: #f5f5f5;
+  scroll-behavior: smooth;
+}
+
+/* CUSTOM SCROLLBARS */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #aa7c11;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #d4af37;
+}
+
+/* Floating custom rings animation helper */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Gradient text */
+.text-gold-gradient {
+  background: linear-gradient(135deg, #f3e5ab 0%, #d4af37 40%, #aa7c11 75%, #8a660d 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

@@ -1,0 +1,435 @@
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Lock, Users, MessageSquare, BookOpen, BarChart3, Trash2, Check, X, FileSpreadsheet, Settings } from 'lucide-react';
+
+import { RSVP, Wish, GuestbookSign } from '@/lib/db';
+
+export default function AdminPage() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [pin, setPin] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
+
+  const [rsvps, setRsvps] = useState<RSVP[]>([]);
+  const [wishes, setWishes] = useState<Wish[]>([]);
+  const [guestbookSigns, setGuestbookSigns] = useState<GuestbookSign[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Stats Counters
+  const [stats, setStats] = useState({
+    totalRsvps: 0,
+    attendingCount: 0,
+    pendingWishes: 0,
+    guestbookCount: 0
+  });
+
+  const chartCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const fetchAdminData = async () => {
+    setLoading(true);
+    try {
+      const [rsvpsRes, wishesRes, gbRes] = await Promise.all([
+        fetch('/api/rsvps'),
+        fetch('/api/wishes?all=true'),
+        fetch('/api/guestbook')
+      ]);
+
+      if (rsvpsRes.ok && wishesRes.ok && gbRes.ok) {
+        const rsvpsData = await rsvpsRes.json();
+        const wishesData = await wishesRes.json();
+        const gbData = await gbRes.json();
+
+        setRsvps(rsvpsData);
+        setWishes(wishesData);
+        setGuestbookSigns(gbData);
+
+        // Compute analytics stats
+        const totalRsvps = rsvpsData.length;
+        const attendingCount = rsvpsData
+          .filter((r: RSVP) => r.status === 'Yes')
+          .reduce((acc: number, curr: RSVP) => acc + (curr.guests || 1), 0);
+        const pendingWishes = wishesData.filter((w: Wish) => !w.approved).length;
+        const guestbookCount = gbData.length;
+
+        setStats({
+          totalRsvps,
+          attendingCount,
+          pendingWishes,
+          guestbookCount
+        });
+      }
+    } catch (err) {
+      console.error("Failed to fetch admin dashboard records:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyPin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pin === '1234') {
+      setIsLoggedIn(true);
+      fetchAdminData();
+    } else {
+      alert("Incorrect Security PIN. Please try again.");
+    }
+  };
+
+  // Moderation Handlers
+  const handleWishApproval = async (id: number, approveStatus: boolean) => {
+    try {
+      const response = await fetch('/api/wishes', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, approved: approveStatus })
+      });
+
+      if (response.ok) {
+        alert(approveStatus ? "Wish approved & published live!" : "Wish retracted from public wall.");
+        fetchAdminData();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleWishDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to permanently delete this wish?")) return;
+
+    try {
+      const response = await fetch(`/api/wishes?id=${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        fetchAdminData();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleRsvpDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this guest RSVP record?")) return;
+
+    try {
+      const response = await fetch(`/api/rsvps?id=${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        fetchAdminData();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // CSV Export
+  const exportCSV = () => {
+    let csv = "data:text/csv;charset=utf-8,";
+    csv += "Guest Name,Attending Status,Guest Count,Message,Timestamp\n";
+
+    rsvps.forEach(r => {
+      const cleanMessage = r.message ? r.message.replace(/"/g, '""') : '';
+      const cleanTimestamp = r.created_at ? new Date(r.created_at).toLocaleDateString() : '';
+      csv += `"${r.name}","${r.status}",${r.guests},"${cleanMessage}","${cleanTimestamp}"\n`;
+    });
+
+    const encodedUri = encodeURI(csv);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `anniversary_rsvps_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Draws live canvas site visit analytics
+  const drawChart = () => {
+    const canvas = chartCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const w = canvas.width = canvas.parentElement?.clientWidth || 500;
+    const h = canvas.height = 140;
+
+    ctx.clearRect(0, 0, w, h);
+
+    const data = [14, 22, 5, 8, 3, 4, 30, 42, 50, 71, 62, 79, 90, 115];
+    const maxVal = Math.max(...data);
+    const padding = 20;
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i <= 3; i++) {
+      const y = padding + (h - padding*2) * (i / 3);
+      ctx.beginPath();
+      ctx.moveTo(padding, y);
+      ctx.lineTo(w - padding, y);
+      ctx.stroke();
+    }
+
+    // Curve Line
+    ctx.strokeStyle = '#d4af37';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+
+    const step = (w - padding * 2) / (data.length - 1);
+    data.forEach((val, idx) => {
+      const x = padding + idx * step;
+      const y = h - padding - (val / maxVal) * (h - padding * 2);
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Glowing points
+    ctx.fillStyle = '#ffffff';
+    data.forEach((val, idx) => {
+      const x = padding + idx * step;
+      const y = h - padding - (val / maxVal) * (h - padding * 2);
+      ctx.beginPath();
+      ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  };
+
+  useEffect(() => {
+    if (isLoggedIn && activeTab === 'overview') {
+      setTimeout(drawChart, 100);
+      window.addEventListener('resize', drawChart);
+    }
+    return () => window.removeEventListener('resize', drawChart);
+  }, [isLoggedIn, activeTab]);
+
+  return (
+    <div className="min-h-screen bg-[#070707] text-[#f5f5f5] py-16 px-6 font-sans">
+      <AnimatePresence mode="wait">
+        {/* LOGIN SCREEN */}
+        {!isLoggedIn ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            className="max-w-md mx-auto mt-20 p-8 bg-luxury-card backdrop-blur-md border border-luxury-border rounded-2xl shadow-gold text-center"
+          >
+            <Lock className="w-12 h-12 text-luxury-gold mx-auto mb-6" />
+            <h1 className="font-serif text-white text-2xl font-semibold mb-2">Authorized Access Only</h1>
+            <p className="text-neutral-400 text-xs mb-8">Enter the default administrative Security PIN (1234) to unlock the invitation dashboard.</p>
+
+            <form onSubmit={verifyPin} className="space-y-6">
+              <input
+                type="password"
+                required
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                placeholder="••••"
+                style={{ letterSpacing: '8px' }}
+                className="w-full text-center bg-white/3 border border-luxury-gold/25 text-white rounded-lg px-4 py-3 text-xl focus:border-luxury-gold focus:outline-none transition-all"
+              />
+              <button
+                type="submit"
+                className="w-full bg-gradient-to-r from-luxury-gold-secondary to-luxury-gold text-neutral-900 py-3 rounded-full font-sans font-semibold tracking-widest uppercase text-xs shadow-gold transition-all duration-300"
+              >
+                Unlock Dashboard
+              </button>
+            </form>
+          </motion.div>
+        ) : (
+          /* LIVE DASHBOARD VIEW */
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="max-w-5xl mx-auto"
+          >
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-center border-b border-luxury-gold/10 pb-8 mb-10 gap-4">
+              <div>
+                <span className="text-[10px] tracking-widest text-luxury-gold uppercase font-semibold block mb-1">Administrative panel</span>
+                <h1 className="font-serif text-white text-3xl font-bold">Couple Control Center</h1>
+              </div>
+
+              {/* Tab options selector */}
+              <div className="flex border border-luxury-gold/25 rounded-full overflow-hidden p-1 bg-black/60">
+                {['overview', 'rsvps', 'wishes', 'guestbook'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-6 py-2 rounded-full text-xs uppercase font-semibold tracking-wider transition-all ${activeTab === tab ? 'bg-gradient-to-r from-luxury-gold-secondary to-luxury-gold text-neutral-900' : 'text-neutral-400 hover:text-white'}`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* TAB PANELS */}
+            {activeTab === 'overview' && (
+              <div className="space-y-8 text-left">
+                {/* Stats row */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    { label: 'Total RSVPs', value: stats.totalRsvps, icon: Users },
+                    { label: 'Attending Count', value: stats.attendingCount, icon: Users },
+                    { label: 'Pending Wishes', value: stats.pendingWishes, icon: MessageSquare },
+                    { label: 'Guestbook Signs', value: stats.guestbookCount, icon: BookOpen },
+                  ].map((stat, i) => (
+                    <div key={i} className="p-6 bg-luxury-card border border-luxury-border rounded-xl">
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-[10px] uppercase font-semibold text-neutral-400 tracking-wider">{stat.label}</span>
+                        <stat.icon className="w-4 h-4 text-luxury-gold" />
+                      </div>
+                      <p className="text-3xl font-serif text-white font-semibold">{stat.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Graph Analytics box */}
+                <div className="p-8 bg-luxury-card border border-luxury-border rounded-xl">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="font-serif text-white text-lg font-semibold">Page View Analytics (Simulated Live)</h3>
+                    <BarChart3 className="w-5 h-5 text-luxury-gold" />
+                  </div>
+                  <canvas ref={chartCanvasRef} className="w-full block" />
+                </div>
+
+                <div className="flex justify-start">
+                  <button
+                    onClick={exportCSV}
+                    className="flex items-center gap-2 bg-gradient-to-r from-luxury-gold-secondary to-luxury-gold text-neutral-900 px-6 py-3 rounded-full text-xs uppercase font-semibold tracking-wider shadow-gold"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" /> Export RSVPs to CSV
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'rsvps' && (
+              <div className="space-y-6 text-left">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="font-serif text-white text-xl font-semibold">RSVP Guest Responses ({rsvps.length})</h2>
+                  <button onClick={exportCSV} className="text-luxury-gold hover:underline text-xs flex items-center gap-1">
+                    <FileSpreadsheet className="w-4 h-4" /> Export CSV
+                  </button>
+                </div>
+
+                <div className="bg-luxury-card border border-luxury-border rounded-xl overflow-hidden shadow-md">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-[#121212] text-[10px] uppercase tracking-wider text-luxury-gold font-semibold border-b border-luxury-border">
+                        <tr>
+                          <th className="p-4">Name</th>
+                          <th className="p-4">Status</th>
+                          <th className="p-4">Guests</th>
+                          <th className="p-4">Message</th>
+                          <th className="p-4 text-center">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-800/40">
+                        {rsvps.map((rsvp) => (
+                          <tr key={rsvp.id} className="hover:bg-white/1 transition-colors">
+                            <td className="p-4 font-semibold text-white">{rsvp.name}</td>
+                            <td className="p-4">
+                              <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${rsvp.status === 'Yes' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                                {rsvp.status === 'Yes' ? 'Attending' : 'Declining'}
+                              </span>
+                            </td>
+                            <td className="p-4 font-mono text-white">{rsvp.guests}</td>
+                            <td className="p-4 text-neutral-400 text-xs max-w-xs truncate" title={rsvp.message}>{rsvp.message || '-'}</td>
+                            <td className="p-4 text-center">
+                              <button
+                                onClick={() => handleRsvpDelete(rsvp.id!)}
+                                className="text-rose-400 hover:text-rose-300 p-2 rounded transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'wishes' && (
+              <div className="space-y-6 text-left">
+                <h2 className="font-serif text-white text-xl font-semibold mb-4">Wishes Board Moderation ({wishes.length})</h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {wishes.map((wish) => (
+                    <div key={wish.id} className="p-6 bg-luxury-card border border-luxury-border rounded-xl flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-center mb-3">
+                          <span className="font-serif text-md font-semibold text-luxury-gold">{wish.name}</span>
+                          <span className={`px-2.5 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider ${wish.approved ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                            {wish.approved ? 'Approved' : 'Pending'}
+                          </span>
+                        </div>
+                        <p className="text-neutral-300 text-sm italic mb-6 leading-relaxed">&ldquo;{wish.message}&rdquo;</p>
+                      </div>
+
+                      <div className="flex justify-end gap-2 border-t border-neutral-800/60 pt-4">
+                        {wish.approved ? (
+                          <button
+                            onClick={() => handleWishApproval(wish.id!, false)}
+                            className="flex items-center gap-1 px-4 py-2 border border-neutral-600 text-neutral-400 hover:text-white rounded text-xs uppercase tracking-wider transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" /> Reject
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleWishApproval(wish.id!, true)}
+                            className="flex items-center gap-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs uppercase tracking-wider font-semibold transition-colors"
+                          >
+                            <Check className="w-3.5 h-3.5" /> Approve
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleWishDelete(wish.id!)}
+                          className="flex items-center gap-1 px-4 py-2 border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white rounded text-xs uppercase tracking-wider transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'guestbook' && (
+              <div className="space-y-6 text-left">
+                <h2 className="font-serif text-white text-xl font-semibold mb-4">Digital Guest Book Entries ({guestbookSigns.length})</h2>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {guestbookSigns.map((sign) => (
+                    <div key={sign.id} className="p-6 bg-luxury-card border border-luxury-border rounded-xl flex flex-col items-center text-center">
+                      <div className="w-16 h-16 rounded-full border border-luxury-gold/40 overflow-hidden bg-neutral-800 flex items-center justify-center mb-4 text-luxury-gold font-serif text-lg">
+                        {sign.photo_url ? (
+                          <img src={sign.photo_url} alt={sign.name} className="w-full h-full object-cover" />
+                        ) : (
+                          sign.name.charAt(0).toUpperCase()
+                        )}
+                      </div>
+
+                      {sign.signature_url && (
+                        <img
+                          src={sign.signature_url}
+                          alt={`${sign.name} signature`}
+                          className="h-10 max-w-[120px] object-contain mb-4 filter invert brightness-200"
+                        />
+                      )}
+
+                      <span className="font-sans text-xs font-semibold text-white mb-2">{sign.name}</span>
+                      <p className="text-neutral-400 text-xs italic leading-relaxed">&ldquo;{sign.message}&rdquo;</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
