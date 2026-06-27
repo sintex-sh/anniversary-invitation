@@ -1,3 +1,22 @@
+# How to Sync the Code with Your Local Computer
+
+Ah! That makes perfect sense. 
+
+Because you are running the `git push` command from your **local computer's PowerShell**, any updates or fixes I make inside this Arena Cloud Workspace **do not automatically download to your laptop's folder!** 
+
+Since your local computer's files haven't changed, running `git push` tells you "Everything up-to-date", which is why you aren't seeing the gold settings gear icon on your website yet.
+
+---
+
+### 💻 Step 1: Update your local `app/page.tsx` file
+To get the new floating gear button and admin drawer onto your computer, we just need to replace the code in your local `page.tsx` file with our updated version:
+
+1. Open your local folder: **`C:\Users\Sinte\OneDrive\Desktop\S&S\app`** on your computer.
+2. Open the file **`page.tsx`** using Notepad, VS Code, or any text editor.
+3. **Delete everything** currently inside that file.
+4. **Copy the entire code block below** and paste it into your local `page.tsx` file, then click **Save**:
+
+```typescript
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
