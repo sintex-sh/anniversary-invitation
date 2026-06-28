@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Calendar, MapPin, Gift, Share2, Heart, Settings, Lock, Users, MessageSquare, BookOpen, Trash2, Check, X, FileSpreadsheet } from 'lucide-react';
@@ -19,8 +21,8 @@ export default function Home() {
   const [personalizedBannerActive, setPersonalizedBannerActive] = useState(false);
   const [rsvpSuccessMessage, setRsvpSuccessMessage] = useState<string | null>(null);
 
-  // Live Editable Invitation Settings
-  const [coupleDisplay, setCoupleDisplay] = useState("Abebe & Helen");
+  // Live Editable Invitation Settings (Preset with Selamawit & Sintayehu!)
+  const [coupleDisplay, setCoupleDisplay] = useState("Selamawit & Sintayehu");
   const [titleDisplay, setTitleDisplay] = useState("Celebrating 10 Years Since Our Story Began");
   const [dateDisplay, setDateDisplay] = useState("Saturday, September 12, 2026");
   const [venueDisplay, setVenueDisplay] = useState("Grand Ballroom, Amara Luxury Hotel");
@@ -48,9 +50,9 @@ export default function Home() {
 
   // Seed Data (Placeholder Fallbacks)
   const milestones: Milestone[] = [
-    { id: 1, date: "September 12, 2016", title: "First Meeting", desc: "A chance encounter in a beautiful rooftop caf√© in Addis Ababa. Abebe accidentally sat at Helen's table, and a 3-hour conversation bloomed into something eternal.", visualSeed: 45 },
+    { id: 1, date: "September 12, 2016", title: "First Meeting", desc: "A chance encounter in a beautiful rooftop caf√© in Addis Ababa. Sintayehu accidentally sat at Selamawit's table, and a 3-hour conversation bloomed into something eternal.", visualSeed: 45 },
     { id: 2, date: "October 5, 2016", title: "First Date", desc: "A cozy evening stroll under the jacaranda trees, followed by a romantic candlelit dinner. That was the night we knew we wanted to write all our future chapters together.", visualSeed: 88 },
-    { id: 3, date: "December 24, 2019", title: "The Proposal", desc: "Under a sparkling canopy of Christmas fairy lights, Abebe knelt down and asked the question of a lifetime. Amidst tears of joy and pure love, Helen whispered a beautiful YES.", visualSeed: 120 },
+    { id: 3, date: "December 24, 2019", title: "The Proposal", desc: "Under a sparkling canopy of Christmas fairy lights, Sintayehu knelt down and asked the question of a lifetime. Amidst tears of joy and pure love, Selamawit whispered a beautiful YES.", visualSeed: 120 },
     { id: 4, date: "August 20, 2021", title: "The Wedding Day", desc: "In front of our dearest family and friends, we promised our forevers. A gorgeous luxury celebration filled with gold accents, emotional vows, and a lot of happy dancing.", visualSeed: 212 },
     { id: 5, date: "June 15, 2023", title: "Our Little Miracle", desc: "Our family grew and our hearts doubled in size. The arrival of our baby filled our lives with sweet laughter, adorable baby steps, and an even deeper sense of devotion.", visualSeed: 330 },
     { id: 6, date: "September 12, 2026", title: "The 10-Year Jubilee", desc: "Ten full years since our eyes first met. Through every joy, every triumph, and every shared dream, we stand stronger, deeper in love, and ready for our next decade.", visualSeed: 42 }
@@ -396,7 +398,7 @@ export default function Home() {
                             <span className={`text-[10px] font-semibold uppercase tracking-wider ${r.status === 'Yes' ? 'text-emerald-400' : 'text-rose-400'}`}>
                               {r.status === 'Yes' ? `Attending (${r.guests} guests)` : 'Declined'}
                             </span>
-                            {r.message && <p className="text-neutral-400 text-xs italic mt-1">ì{r.message}î</p>}
+                            {r.message && <p className="text-neutral-400 text-xs italic mt-1">&ldquo;{r.message}&rdquo;</p>}
                           </div>
                           <button onClick={() => handleRsvpDelete(r.id!)} className="text-rose-400 hover:text-rose-300 p-2">
                             <Trash2 className="w-4 h-4" />
@@ -419,7 +421,7 @@ export default function Home() {
                           <div className="flex justify-between items-start">
                             <div>
                               <span className="text-sm font-semibold text-luxury-gold block">{w.name}</span>
-                              <p className="text-neutral-300 text-xs italic mt-1">ì{w.message}î</p>
+                              <p className="text-neutral-300 text-xs italic mt-1">&ldquo;{w.message}&rdquo;</p>
                             </div>
                           </div>
                           <div className="flex justify-end gap-2 border-t border-neutral-800/40 pt-2">
@@ -505,7 +507,7 @@ export default function Home() {
             </h1>
 
             <p className="font-serif italic text-neutral-300 text-lg md:text-xl max-w-2xl leading-relaxed mb-10">
-              ìTen years of laughter, growth, and unconditional love. We want you to celebrate this milestone with us.î
+              &ldquo;Ten years of laughter, growth, and unconditional love. We want you to celebrate this milestone with us.&rdquo;
             </p>
 
             <span className="font-sans text-neutral-100 text-sm font-medium tracking-widest uppercase mb-12">
@@ -656,7 +658,7 @@ export default function Home() {
                 <button
                   key={plat}
                   onClick={() => {
-                    const txt = encodeURIComponent(`We are celebrating 10 years! You are warmly invited to Abebe & Helen's anniversary milestone: `);
+                    const txt = encodeURIComponent(`We are celebrating 10 years! You are warmly invited to Selamawit & Sintayehu's anniversary milestone:` );
                     const url = encodeURIComponent(window.location.href);
                     let target = "";
                     if (plat === 'WhatsApp') target = `https://api.whatsapp.com/send?text=${txt}%20${url}`;
@@ -711,11 +713,10 @@ export default function Home() {
 
       {/* FOOTER */}
       <footer className="py-12 bg-neutral-950 border-t border-luxury-gold/10 text-center text-xs text-neutral-500">
-        <p className="font-script text-luxury-gold text-3xl mb-4">A & H</p>
+        <p className="font-script text-luxury-gold text-3xl mb-4">S & S</p>
         <p className="font-serif italic mb-6">"Two lives, ten years, a lifetime of love."</p>
-        <p className="uppercase tracking-[2px]">Made with Love for abe & helen anniversary</p>
+        <p className="uppercase tracking-[2px]">Made with Love for Selamawit & Sintayehu anniversary</p>
       </footer>
     </>
   );
 }
-
