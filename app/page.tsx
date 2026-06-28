@@ -1,8 +1,6 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Calendar, MapPin, Gift, Share2, Heart } from 'lucide-react';
+import { Sparkles, Calendar, MapPin, Gift, Share2, Heart, Settings, Lock, Users, MessageSquare, BookOpen, Trash2, Check, X, FileSpreadsheet } from 'lucide-react';
 
 import LoadingScreen from '@/components/LoadingScreen';
 import MusicPlayer from '@/components/MusicPlayer';
@@ -13,32 +11,7 @@ import RSVPForm from '@/components/RSVPForm';
 import WishesSection from '@/components/WishesSection';
 import GuestBook from '@/components/GuestBook';
 
-// Event Details Constants
-const coupleNames = "Selamawit & Sintayehu";
-const anniversaryTitle = "Celebrating 10 Years Since Our Story Began";
-const eventDate = "Saturday, September 12, 2026";
-const countdownTarget = "2026-09-12 17:00:00";
-const venueName = "Grand Ballroom, Amara Luxury Hotel";
-const locationDetails = "Bole Road, Addis Ababa, Ethiopia";
-const notesText = "Black Tie Elegant (Black, Gold & Emerald themes preferred). Strictly adult RSVP only.";
-
-const milestones: Milestone[] = [
-  { id: 1, date: "September 12, 2016", title: "First Meeting", desc: "A chance encounter in a beautiful rooftop café in Addis Ababa. Sintayehu accidentally sat at Selam's table, and a 3-hour conversation bloomed into something eternal.", visualSeed: 45 },
-  { id: 2, date: "October 5, 2016", title: "First Date", desc: "A cozy evening stroll under the jacaranda trees, followed by a romantic candlelit dinner. That was the night we knew we wanted to write all our future chapters together.", visualSeed: 88 },
-  { id: 3, date: "December 24, 2019", title: "The Proposal", desc: "Under a sparkling canopy of Christmas fairy lights, Sintayehu knelt down and asked the question of a lifetime. Amidst tears of joy and pure love, Selam whispered a beautiful YES.", visualSeed: 120 },
-  { id: 4, date: "August 20, 2021", title: "The Wedding Day", desc: "In front of our dearest family and friends, we promised our forevers. A gorgeous luxury celebration filled with gold accents, emotional vows, and a lot of happy dancing.", visualSeed: 212 },
-  { id: 5, date: "June 15, 2023", title: "Our Little Miracle", desc: "Our family grew and our hearts doubled in size. The arrival of our baby filled our lives with sweet laughter, adorable baby steps, and an even deeper sense of devotion.", visualSeed: 330 },
-  { id: 6, date: "September 12, 2026", title: "The 10-Year Jubilee", desc: "Ten full years since our eyes first met. Through every joy, every triumph, and every shared dream, we stand stronger, deeper in love, and ready for our next decade.", visualSeed: 42 }
-];
-
-const photos: Photo[] = [
-  { id: 1, title: "Our Wedding Day Portrait", category: "wedding", desc: "Golden hour glow on the grand ballroom balcony.", visualSeed: 105 },
-  { id: 2, title: "Cozy Coffee Strolls", category: "early", desc: "Where we first learned each other's favorite stories.", visualSeed: 8 },
-  { id: 3, title: "Rooftop Date Nights", category: "early", desc: "Overlooking the beautiful city lights together.", visualSeed: 49 },
-  { id: 4, title: "With Our Little Miracle", category: "family", desc: "Pure happiness on our first summer family walk.", visualSeed: 145 },
-  { id: 5, title: "Exchange of Rings", category: "wedding", desc: "A timeless token of our everlasting love vows.", visualSeed: 220 },
-  { id: 6, title: "First Family Vacation", category: "family", desc: "Splashing in the warm beach shores under golden rays.", visualSeed: 180 }
-];
+import { RSVP, Wish, GuestbookSign } from '@/lib/db';
 
 export default function Home() {
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -46,8 +19,191 @@ export default function Home() {
   const [personalizedBannerActive, setPersonalizedBannerActive] = useState(false);
   const [rsvpSuccessMessage, setRsvpSuccessMessage] = useState<string | null>(null);
 
+  // Live Editable Invitation Settings
+  const [coupleDisplay, setCoupleDisplay] = useState("Abebe & Helen");
+  const [titleDisplay, setTitleDisplay] = useState("Celebrating 10 Years Since Our Story Began");
+  const [dateDisplay, setDateDisplay] = useState("Saturday, September 12, 2026");
+  const [venueDisplay, setVenueDisplay] = useState("Grand Ballroom, Amara Luxury Hotel");
+  const [locationDisplay, setLocationDisplay] = useState("Bole Road, Addis Ababa, Ethiopia");
+  const [notesDisplay, setNotesDisplay] = useState("Black Tie Elegant (Black, Gold & Emerald themes preferred). Strictly adult RSVP only.");
+
+  // Admin Drawer States
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [adminPin, setAdminPin] = useState('');
+  const [adminTab, setAdminTab] = useState('overview');
+
+  // Admin Stats
+  const [rsvps, setRsvps] = useState<RSVP[]>([]);
+  const [wishes, setWishes] = useState<Wish[]>([]);
+  const [guestbookSigns, setGuestbookSigns] = useState<GuestbookSign[]>([]);
+  const [stats, setStats] = useState({
+    totalRsvps: 0,
+    attendingCount: 0,
+    pendingWishes: 0,
+    guestbookCount: 0
+  });
+
+  const chartCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Seed Data (Placeholder Fallbacks)
+  const milestones: Milestone[] = [
+    { id: 1, date: "September 12, 2016", title: "First Meeting", desc: "A chance encounter in a beautiful rooftop café in Addis Ababa. Abebe accidentally sat at Helen's table, and a 3-hour conversation bloomed into something eternal.", visualSeed: 45 },
+    { id: 2, date: "October 5, 2016", title: "First Date", desc: "A cozy evening stroll under the jacaranda trees, followed by a romantic candlelit dinner. That was the night we knew we wanted to write all our future chapters together.", visualSeed: 88 },
+    { id: 3, date: "December 24, 2019", title: "The Proposal", desc: "Under a sparkling canopy of Christmas fairy lights, Abebe knelt down and asked the question of a lifetime. Amidst tears of joy and pure love, Helen whispered a beautiful YES.", visualSeed: 120 },
+    { id: 4, date: "August 20, 2021", title: "The Wedding Day", desc: "In front of our dearest family and friends, we promised our forevers. A gorgeous luxury celebration filled with gold accents, emotional vows, and a lot of happy dancing.", visualSeed: 212 },
+    { id: 5, date: "June 15, 2023", title: "Our Little Miracle", desc: "Our family grew and our hearts doubled in size. The arrival of our baby filled our lives with sweet laughter, adorable baby steps, and an even deeper sense of devotion.", visualSeed: 330 },
+    { id: 6, date: "September 12, 2026", title: "The 10-Year Jubilee", desc: "Ten full years since our eyes first met. Through every joy, every triumph, and every shared dream, we stand stronger, deeper in love, and ready for our next decade.", visualSeed: 42 }
+  ];
+
+  const photos: Photo[] = [
+    { id: 1, title: "Our Wedding Day Portrait", category: "wedding", desc: "Golden hour glow on the grand ballroom balcony.", visualSeed: 105 },
+    { id: 2, title: "Cozy Coffee Strolls", category: "early", desc: "Where we first learned each other's favorite stories.", visualSeed: 8 },
+    { id: 3, title: "Rooftop Date Nights", category: "early", desc: "Overlooking the beautiful city lights together.", visualSeed: 49 },
+    { id: 4, title: "With Our Little Miracle", category: "family", desc: "Pure happiness on our first summer family walk.", visualSeed: 145 },
+    { id: 5, title: "Exchange of Rings", category: "wedding", desc: "A timeless token of our everlasting love vows.", visualSeed: 220 },
+    { id: 6, title: "First Family Vacation", category: "family", desc: "Splashing in the warm beach shores under golden rays.", visualSeed: 180 }
+  ];
+
+  // Fetch admin and stats data from API
+  const fetchAdminData = async () => {
+    try {
+      const [rsvpsRes, wishesRes, gbRes] = await Promise.all([
+        fetch('/api/rsvps'),
+        fetch('/api/wishes?all=true'),
+        fetch('/api/guestbook')
+      ]);
+
+      if (rsvpsRes.ok && wishesRes.ok && gbRes.ok) {
+        const rsvpsData = await rsvpsRes.json();
+        const wishesData = await wishesRes.json();
+        const gbData = await gbRes.json();
+
+        setRsvps(rsvpsData);
+        setWishes(wishesData);
+        setGuestbookSigns(gbData);
+
+        const totalRsvps = rsvpsData.length;
+        const attendingCount = rsvpsData
+          .filter((r: RSVP) => r.status === 'Yes')
+          .reduce((acc: number, curr: RSVP) => acc + (curr.guests || 1), 0);
+        const pendingWishes = wishesData.filter((w: Wish) => !w.approved).length;
+        const guestbookCount = gbData.length;
+
+        setStats({
+          totalRsvps,
+          attendingCount,
+          pendingWishes,
+          guestbookCount
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleVerifyPin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (adminPin === '1234') {
+      setIsAdminLoggedIn(true);
+      fetchAdminData();
+    } else {
+      alert("Incorrect Security PIN. Try '1234'.");
+    }
+  };
+
+  const handleWishApproval = async (id: number, approveStatus: boolean) => {
+    try {
+      const response = await fetch('/api/wishes', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, approved: approveStatus })
+      });
+      if (response.ok) {
+        alert(approveStatus ? "Wish approved & published!" : "Wish retracted.");
+        fetchAdminData();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleWishDelete = async (id: number) => {
+    if (!confirm("Are you sure?")) return;
+    try {
+      const response = await fetch(`/api/wishes?id=${id}`, { method: 'DELETE' });
+      if (response.ok) fetchAdminData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleRsvpDelete = async (id: number) => {
+    if (!confirm("Are you sure?")) return;
+    try {
+      const response = await fetch(`/api/rsvps?id=${id}`, { method: 'DELETE' });
+      if (response.ok) fetchAdminData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const exportCSV = () => {
+    let csv = "data:text/csv;charset=utf-8,";
+    csv += "Guest Name,Attending Status,Guest Count,Message\n";
+    rsvps.forEach(r => {
+      csv += `"${r.name}","${r.status}",${r.guests},"${(r.message || '').replace(/"/g, '""')}"\n`;
+    });
+    const encoded = encodeURI(csv);
+    const link = document.createElement("a");
+    link.setAttribute("href", encoded);
+    link.setAttribute("download", `anniversary_rsvps.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Draw chart in admin dashboard drawer
+  const drawChart = () => {
+    const canvas = chartCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const w = canvas.width = canvas.parentElement?.clientWidth || 300;
+    const h = canvas.height = 120;
+    ctx.clearRect(0, 0, w, h);
+
+    const data = [12, 19, 3, 5, 2, 3, 22, 35, 41, 56, 48, 65, 80, 95];
+    const maxVal = Math.max(...data);
+    const padding = 15;
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.beginPath();
+    ctx.moveTo(padding, h/2);
+    ctx.lineTo(w - padding, h/2);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#d4af37';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const step = (w - padding * 2) / (data.length - 1);
+    data.forEach((val, index) => {
+      const x = padding + index * step;
+      const y = h - padding - (val / maxVal) * (h - padding * 2);
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  };
+
   useEffect(() => {
-    // Check URL parameters for personalized greeting
+    if (isAdminLoggedIn && adminTab === 'overview') {
+      setTimeout(drawChart, 150);
+    }
+  }, [isAdminLoggedIn, adminTab, isAdminOpen]);
+
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const guest = params.get('guest') || params.get('to');
@@ -67,32 +223,35 @@ export default function Home() {
     }
   };
 
-  const generateGuestLink = (name: string) => {
-    if (typeof window === 'undefined') return '';
-    const encoded = encodeURIComponent(name.trim().replace(/\s+/g, '_'));
-    return `${window.location.origin}?guest=${encoded}`;
-  };
-
   const handleRsvpSuccess = (name: string) => {
     setRsvpSuccessMessage(`Thank you, ${name}! Your RSVP has been received successfully.`);
     setTimeout(() => {
       setRsvpSuccessMessage(null);
     }, 5000);
+    fetchAdminData(); // Refresh counts live!
   };
 
   return (
     <>
       {/* 1. Loader screen */}
-      <LoadingScreen onUnlock={handleUnlock} targetDateStr={countdownTarget} />
+      <LoadingScreen onUnlock={handleUnlock} targetDateStr="2026-09-12 17:00:00" />
 
-      {/* Floating global music player */}
+      {/* Floating global controls */}
       {isUnlocked && (
-        <div className="fixed top-6 right-6 z-[999]">
+        <div className="fixed top-6 right-6 z-[999] flex items-center gap-3">
+          {/* Settings gear button to slide open admin drawer directly on homepage */}
+          <button
+            onClick={() => setIsAdminOpen(true)}
+            className="w-10 h-10 rounded-full bg-black/85 border border-luxury-gold text-luxury-gold flex items-center justify-center hover:bg-luxury-gold hover:text-black shadow-gold transition-all duration-300"
+            title="Admin Dashboard"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
           <MusicPlayer />
         </div>
       )}
 
-      {/* Personalized Invitation Banner overlay */}
+      {/* Personalized Invitation Banner */}
       <AnimatePresence>
         {personalizedBannerActive && guestName && (
           <motion.div
@@ -129,7 +288,201 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* App main container content layout */}
+      {/* ADMIN DRAWER COMPONENT */}
+      <AnimatePresence>
+        {isAdminOpen && (
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
+            className="fixed top-0 right-0 h-full w-full max-w-md bg-[#0b0b0b] z-[10000] shadow-2xl border-l border-luxury-gold/20 overflow-y-auto"
+          >
+            {/* Header */}
+            <div className="flex justify-between items-center p-6 border-b border-luxury-gold/15 bg-black/40">
+              <h3 className="font-serif text-white text-lg font-semibold flex items-center gap-2">
+                <Settings className="w-5 h-5 text-luxury-gold" /> Admin Dashboard
+              </h3>
+              <button 
+                onClick={() => { setIsAdminLoggedIn(false); setIsAdminOpen(false); }} 
+                className="text-neutral-400 hover:text-white"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Content Switcher */}
+            {!isAdminLoggedIn ? (
+              // ADMIN PASSWORD LOCK
+              <div className="p-8 text-center flex flex-col items-center justify-center h-[70vh]">
+                <Lock className="w-12 h-12 text-luxury-gold mb-6" />
+                <h4 className="font-serif text-white text-xl font-medium mb-2">Authorized Access Only</h4>
+                <p className="text-neutral-400 text-xs mb-8">Enter the default PIN (1234) to unlock direct database analytics, moderations, and RSVP lists.</p>
+                <form onSubmit={handleVerifyPin} className="w-full space-y-4">
+                  <input
+                    type="password"
+                    required
+                    value={adminPin}
+                    onChange={(e) => setAdminPin(e.target.value)}
+                    placeholder="••••"
+                    style={{ letterSpacing: '8px' }}
+                    className="w-full text-center bg-white/3 border border-luxury-gold/25 text-white rounded-lg px-4 py-3 text-lg focus:border-luxury-gold focus:outline-none"
+                  />
+                  <button type="submit" className="w-full bg-gradient-to-r from-luxury-gold-secondary to-luxury-gold text-neutral-900 py-3.5 rounded-full font-sans font-semibold tracking-wider uppercase text-xs shadow-gold">
+                    Unlock Panel
+                  </button>
+                </form>
+              </div>
+            ) : (
+              // ADMIN DASHBOARD PANELS
+              <div className="p-6 text-left">
+                {/* Tab buttons */}
+                <div className="flex gap-2 border-b border-neutral-800 pb-3 mb-6 overflow-x-auto">
+                  {['overview', 'rsvps', 'wishes', 'settings'].map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setAdminTab(tab)}
+                      className={`text-xs uppercase font-semibold tracking-wider px-3 py-1.5 rounded transition-colors ${adminTab === tab ? 'text-luxury-gold border-b-2 border-luxury-gold rounded-none' : 'text-neutral-500 hover:text-white'}`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+
+                {/* OVERVIEW PANEL */}
+                {adminTab === 'overview' && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 bg-white/2 border border-neutral-800 rounded-lg">
+                        <span className="text-[9px] text-neutral-500 uppercase font-semibold">Total RSVPs</span>
+                        <p className="text-2xl font-serif text-white font-medium mt-1">{stats.totalRsvps}</p>
+                      </div>
+                      <div className="p-4 bg-white/2 border border-neutral-800 rounded-lg">
+                        <span className="text-[9px] text-neutral-500 uppercase font-semibold">Attending Headcount</span>
+                        <p className="text-2xl font-serif text-white font-medium mt-1">{stats.attendingCount}</p>
+                      </div>
+                      <div className="p-4 bg-white/2 border border-neutral-800 rounded-lg">
+                        <span className="text-[9px] text-neutral-500 uppercase font-semibold">Pending Wishes</span>
+                        <p className="text-2xl font-serif text-white font-medium mt-1">{stats.pendingWishes}</p>
+                      </div>
+                      <div className="p-4 bg-white/2 border border-neutral-800 rounded-lg">
+                        <span className="text-[9px] text-neutral-500 uppercase font-semibold">Guestbook Signs</span>
+                        <p className="text-2xl font-serif text-white font-medium mt-1">{stats.guestbookCount}</p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-[#111] border border-neutral-800 rounded-lg">
+                      <h5 className="text-xs font-semibold text-luxury-gold uppercase tracking-wider mb-4">Traffic (Simulated Live)</h5>
+                      <canvas ref={chartCanvasRef} className="w-full h-24 block"></canvas>
+                    </div>
+
+                    <button onClick={exportCSV} className="w-full bg-gradient-to-r from-luxury-gold-secondary to-luxury-gold text-neutral-900 py-3 rounded-full text-xs font-semibold uppercase tracking-wider shadow-gold">
+                      Export RSVPs to CSV
+                    </button>
+                  </div>
+                )}
+
+                {/* RSVPs PANEL */}
+                {adminTab === 'rsvps' && (
+                  <div className="space-y-4">
+                    <h4 className="font-serif text-white font-medium">Guest RSVPs</h4>
+                    {rsvps.length === 0 ? (
+                      <p className="text-xs text-neutral-500 italic">No RSVPs received yet.</p>
+                    ) : (
+                      rsvps.map(r => (
+                        <div key={r.id} className="p-4 bg-white/2 border border-neutral-800 rounded-lg flex justify-between items-center">
+                          <div>
+                            <span className="text-sm font-semibold text-white block">{r.name}</span>
+                            <span className={`text-[10px] font-semibold uppercase tracking-wider ${r.status === 'Yes' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              {r.status === 'Yes' ? `Attending (${r.guests} guests)` : 'Declined'}
+                            </span>
+                            {r.message && <p className="text-neutral-400 text-xs italic mt-1">&ldquo;{r.message}&rdquo;</p>}
+                          </div>
+                          <button onClick={() => handleRsvpDelete(r.id!)} className="text-rose-400 hover:text-rose-300 p-2">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* MODERATE WISHES PANEL */}
+                {adminTab === 'wishes' && (
+                  <div className="space-y-4">
+                    <h4 className="font-serif text-white font-medium">Moderate Wishes</h4>
+                    {wishes.length === 0 ? (
+                      <p className="text-xs text-neutral-500 italic">No wishes submitted yet.</p>
+                    ) : (
+                      wishes.map(w => (
+                        <div key={w.id} className="p-4 bg-white/2 border border-neutral-800 rounded-lg space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <span className="text-sm font-semibold text-luxury-gold block">{w.name}</span>
+                              <p className="text-neutral-300 text-xs italic mt-1">&ldquo;{w.message}&rdquo;</p>
+                            </div>
+                          </div>
+                          <div className="flex justify-end gap-2 border-t border-neutral-800/40 pt-2">
+                            {w.approved ? (
+                              <button onClick={() => handleWishApproval(w.id!, false)} className="px-3 py-1 border border-neutral-600 text-neutral-400 text-[10px] uppercase rounded font-medium">
+                                Unpublish
+                              </button>
+                            ) : (
+                              <button onClick={() => handleWishApproval(w.id!, true)} className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] uppercase rounded font-bold">
+                                Approve Live
+                              </button>
+                            )}
+                            <button onClick={() => handleWishDelete(w.id!)} className="px-3 py-1 border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white text-[10px] uppercase rounded">
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* EDIT SETTINGS PANEL */}
+                {adminTab === 'settings' && (
+                  <div className="space-y-4">
+                    <h4 className="font-serif text-white font-medium">Live Information Editor</h4>
+                    <div className="space-y-4">
+                      <div className="flex flex-col">
+                        <label className="text-[10px] uppercase text-luxury-gold font-semibold mb-1">Couple Names</label>
+                        <input type="text" value={coupleDisplay} onChange={(e) => setCoupleDisplay(e.target.value)} className="bg-white/3 border border-neutral-800 text-white px-3 py-2 rounded text-sm focus:outline-none" />
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="text-[10px] uppercase text-luxury-gold font-semibold mb-1">Invitation Title</label>
+                        <input type="text" value={titleDisplay} onChange={(e) => setTitleDisplay(e.target.value)} className="bg-white/3 border border-neutral-800 text-white px-3 py-2 rounded text-sm focus:outline-none" />
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="text-[10px] uppercase text-luxury-gold font-semibold mb-1">Date Text</label>
+                        <input type="text" value={dateDisplay} onChange={(e) => setDateDisplay(e.target.value)} className="bg-white/3 border border-neutral-800 text-white px-3 py-2 rounded text-sm focus:outline-none" />
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="text-[10px] uppercase text-luxury-gold font-semibold mb-1">Venue</label>
+                        <input type="text" value={venueDisplay} onChange={(e) => setVenueDisplay(e.target.value)} className="bg-white/3 border border-neutral-800 text-white px-3 py-2 rounded text-sm focus:outline-none" />
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="text-[10px] uppercase text-luxury-gold font-semibold mb-1">Location Details</label>
+                        <input type="text" value={locationDisplay} onChange={(e) => setLocationDisplay(e.target.value)} className="bg-white/3 border border-neutral-800 text-white px-3 py-2 rounded text-sm focus:outline-none" />
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="text-[10px] uppercase text-luxury-gold font-semibold mb-1">Special Notes</label>
+                        <textarea rows={3} value={notesDisplay} onChange={(e) => setNotesDisplay(e.target.value)} className="bg-white/3 border border-neutral-800 text-white px-3 py-2 rounded text-sm focus:outline-none resize-none" />
+                      </div>
+                      <p className="text-[10px] text-neutral-500 italic mt-2">Changes made here are applied instantly to your homepage in real-time!</p>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* APP MAIN CONTAINER */}
       <main className="relative min-h-screen">
         
         {/* LANDING PAGE HERO SECTION */}
@@ -144,11 +497,11 @@ export default function Home() {
             </svg>
 
             <span className="border-t border-b border-luxury-gold text-luxury-gold text-[10px] uppercase font-semibold tracking-[4px] px-6 py-1.5 mb-6 block">
-              {anniversaryTitle}
+              {titleDisplay}
             </span>
 
             <h1 className="font-serif text-white text-5xl md:text-6xl font-bold tracking-wider mb-6 drop-shadow-lg">
-              {coupleNames}
+              {coupleDisplay}
             </h1>
 
             <p className="font-serif italic text-neutral-300 text-lg md:text-xl max-w-2xl leading-relaxed mb-10">
@@ -156,7 +509,7 @@ export default function Home() {
             </p>
 
             <span className="font-sans text-neutral-100 text-sm font-medium tracking-widest uppercase mb-12">
-              {eventDate}
+              {dateDisplay}
             </span>
 
             <button 
@@ -226,7 +579,7 @@ export default function Home() {
                 <Calendar className="w-6 h-6" />
               </div>
               <h3 className="font-serif text-white text-lg font-semibold mb-3">When</h3>
-              <p className="text-white text-sm font-medium mb-1">{eventDate}</p>
+              <p className="text-white text-sm font-medium mb-1">{dateDisplay}</p>
               <p className="text-neutral-400 text-xs">Reception starts at 5:00 PM</p>
             </div>
 
@@ -236,8 +589,8 @@ export default function Home() {
                 <MapPin className="w-6 h-6" />
               </div>
               <h3 className="font-serif text-white text-lg font-semibold mb-3">Where</h3>
-              <p className="text-white text-sm font-medium mb-1">{venueName}</p>
-              <p className="text-neutral-400 text-xs">{locationDetails}</p>
+              <p className="text-white text-sm font-medium mb-1">{venueDisplay}</p>
+              <p className="text-neutral-400 text-xs">{locationDisplay}</p>
             </div>
 
             {/* Special notes Card */}
@@ -247,7 +600,7 @@ export default function Home() {
               </div>
               <h3 className="font-serif text-white text-lg font-semibold mb-3">Special Notes</h3>
               <p className="text-white text-sm font-medium mb-1">Dress Code</p>
-              <p className="text-neutral-400 text-xs">{notesText}</p>
+              <p className="text-neutral-400 text-xs">{notesDisplay}</p>
             </div>
           </div>
 
@@ -303,7 +656,7 @@ export default function Home() {
                 <button
                   key={plat}
                   onClick={() => {
-                    const txt = encodeURIComponent(`We are celebrating 10 years! You are warmly invited to Selamawit & Sintayehu's anniversary milestone: `);
+                    const txt = encodeURIComponent(`We are celebrating 10 years! You are warmly invited to Abebe & Helen's anniversary milestone: `);
                     const url = encodeURIComponent(window.location.href);
                     let target = "";
                     if (plat === 'WhatsApp') target = `https://api.whatsapp.com/send?text=${txt}%20${url}`;
@@ -335,7 +688,8 @@ export default function Home() {
                   onClick={() => {
                     const input = document.getElementById('share-guest-name') as HTMLInputElement;
                     if (input && input.value.trim()) {
-                      const link = generateGuestLink(input.value);
+                      const encoded = encodeURIComponent(input.value.trim().replace(/\s+/g, '_'));
+                      const link = `${window.location.origin}${window.location.pathname}?guest=${encoded}`;
                       navigator.clipboard.writeText(link).then(() => {
                         alert("Custom guest invitation link copied to clipboard! Share it with them.");
                         input.value = "";
@@ -359,7 +713,7 @@ export default function Home() {
       <footer className="py-12 bg-neutral-950 border-t border-luxury-gold/10 text-center text-xs text-neutral-500">
         <p className="font-script text-luxury-gold text-3xl mb-4">A & H</p>
         <p className="font-serif italic mb-6">"Two lives, ten years, a lifetime of love."</p>
-        <p className="uppercase tracking-[2px]">Made with Love for Selamawit & Sintayehu anniversary</p>
+        <p className="uppercase tracking-[2px]">Made with Love for abe & helen anniversary</p>
       </footer>
     </>
   );
