@@ -241,3 +241,4 @@ export async function addGuestbookSign(sign: GuestbookSign): Promise<GuestbookSi
     return newSign;
   }
 }
+

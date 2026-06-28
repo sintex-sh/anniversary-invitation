@@ -396,7 +396,7 @@ export default function Home() {
                             <span className={`text-[10px] font-semibold uppercase tracking-wider ${r.status === 'Yes' ? 'text-emerald-400' : 'text-rose-400'}`}>
                               {r.status === 'Yes' ? `Attending (${r.guests} guests)` : 'Declined'}
                             </span>
-                            {r.message && <p className="text-neutral-400 text-xs italic mt-1">&ldquo;{r.message}&rdquo;</p>}
+                            {r.message && <p className="text-neutral-400 text-xs italic mt-1">“{r.message}”</p>}
                           </div>
                           <button onClick={() => handleRsvpDelete(r.id!)} className="text-rose-400 hover:text-rose-300 p-2">
                             <Trash2 className="w-4 h-4" />
@@ -419,7 +419,7 @@ export default function Home() {
                           <div className="flex justify-between items-start">
                             <div>
                               <span className="text-sm font-semibold text-luxury-gold block">{w.name}</span>
-                              <p className="text-neutral-300 text-xs italic mt-1">&ldquo;{w.message}&rdquo;</p>
+                              <p className="text-neutral-300 text-xs italic mt-1">“{w.message}”</p>
                             </div>
                           </div>
                           <div className="flex justify-end gap-2 border-t border-neutral-800/40 pt-2">
@@ -505,7 +505,7 @@ export default function Home() {
             </h1>
 
             <p className="font-serif italic text-neutral-300 text-lg md:text-xl max-w-2xl leading-relaxed mb-10">
-              &ldquo;Ten years of laughter, growth, and unconditional love. We want you to celebrate this milestone with us.&rdquo;
+              “Ten years of laughter, growth, and unconditional love. We want you to celebrate this milestone with us.”
             </p>
 
             <span className="font-sans text-neutral-100 text-sm font-medium tracking-widest uppercase mb-12">
@@ -718,3 +718,4 @@ export default function Home() {
     </>
   );
 }
+

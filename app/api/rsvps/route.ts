@@ -42,3 +42,4 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Failed to delete RSVP" }, { status: 500 });
   }
 }
+

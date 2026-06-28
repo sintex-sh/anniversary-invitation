@@ -402,3 +402,4 @@ export default function Gallery({ photos }: GalleryProps) {
     </div>
   );
 }
+

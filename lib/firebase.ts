@@ -52,3 +52,4 @@ export async function uploadBase64Image(base64Str: string, path: string): Promis
     return base64Str;
   }
 }
+

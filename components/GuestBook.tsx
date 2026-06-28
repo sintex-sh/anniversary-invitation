@@ -299,7 +299,7 @@ export default function GuestBook() {
                 </span>
 
                 <p className="text-neutral-400 text-xs italic leading-relaxed">
-                  &ldquo;{sign.message}&rdquo;
+                  “{sign.message}”
                 </p>
               </div>
             ))}
@@ -309,3 +309,4 @@ export default function GuestBook() {
     </div>
   );
 }
+

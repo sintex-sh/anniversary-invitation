@@ -76,13 +76,13 @@ export default function WishesSection() {
               className="p-8 bg-luxury-card backdrop-blur-md border border-luxury-border rounded-2xl text-left relative overflow-hidden"
             >
               <span className="absolute top-2 right-6 font-serif text-[6.5rem] text-luxury-gold/5 leading-none pointer-events-none select-none">
-                &ldquo;
+                “
               </span>
               <span className="font-serif text-lg font-semibold text-luxury-gold block mb-3">
                 {wish.name}
               </span>
               <p className="text-neutral-300 text-sm italic leading-relaxed">
-                &ldquo;{wish.message}&rdquo;
+                “{wish.message}”
               </p>
             </motion.div>
           ))}
@@ -139,3 +139,4 @@ export default function WishesSection() {
     </div>
   );
 }
+

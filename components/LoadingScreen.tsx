@@ -104,7 +104,7 @@ export default function LoadingScreen({ onUnlock, targetDateStr }: LoadingScreen
             </h1>
             
             <p className="font-serif italic text-neutral-400 text-sm max-w-md leading-relaxed mb-8">
-              &ldquo;Ten years since our eyes met, and our beautiful story began.&rdquo;
+              “Ten years since our eyes met, and our beautiful story began.”
             </p>
 
             {/* Countdown unit displays */}
@@ -144,3 +144,4 @@ export default function LoadingScreen({ onUnlock, targetDateStr }: LoadingScreen
     </AnimatePresence>
   );
 }
+

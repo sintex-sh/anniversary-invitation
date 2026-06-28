@@ -219,3 +219,4 @@ export default function Timeline({ milestones }: TimelineProps) {
     </div>
   );
 }
+

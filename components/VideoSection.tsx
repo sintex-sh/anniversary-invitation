@@ -199,3 +199,4 @@ export default function VideoSection({ customTitle = "A Decade in 3 Minutes" }: 
     </div>
   );
 }
+

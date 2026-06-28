@@ -162,3 +162,4 @@ export default function RSVPForm({ onSuccess }: RSVPFormProps) {
     </div>
   );
 }
+
